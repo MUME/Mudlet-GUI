@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE MudletPackage>
+<MudletPackage version="1.001">
+	<ScriptPackage>
+		<Script isActive="yes" isFolder="no">
+			<name>MUME GMCP</name>
+			<packageName></packageName>
+			<script>mume = mume or {}
+mume.char = mume.char or {}
+mume.char.hp = mume.char.hp or 0
+mume.char.maxhp = mume.char.maxhp or 0
+mume.char.mana = mume.char.mana or 0
+mume.char.maxmana = mume.char.maxmana or 0
+mume.char.mp = mume.char.mp or 0
+mume.char.maxmp = mume.char.maxmp or 0
+
+-- Font size for the score bars on top of the player window
+local scorebarFontSize = "12"
+
+local exitmap = { n = "north", s = "south", e = "east", w = "west", u = "up", d = "down" }
+
+function roomInfo()
+  -- Set the generic mapper room name
+  map.prompt.room = gmcp.Room.Info.name
+  
+  -- Set the generic mapper exits
+  local exits = {}
+  for k,v in pairs(gmcp.Room.Info.exits) do
+    table.insert(exits, exitmap[k])
+  end
+  map.prompt.exits = table.concat(exits, " ")
+  raiseEvent("onNewRoom", map.prompt.exits)
+end
+
+function charName()
+  mume.char.name = gmcp.Char.Name.name
+
+  -- Reset score because this might be a new character
+  mume.char.hp = 0
+  mume.char.maxhp = 0
+  mume.char.mana = 0
+  mume.char.maxmana = 0
+  mume.char.mp = 0
+  mume.char.maxmp = 0
+
+  healthBar:setValue(100, 100, "")
+  manaBar:setValue(100, 100, "")
+  moveBar:setValue(100, 100, "")
+end
+
+function charVitals()
+  -- Health
+  if (gmcp.Char.Vitals.hp) then
+    mume.char.hp = tonumber(gmcp.Char.Vitals.hp)
+    if (mume.char.maxhp &lt; mume.char.hp) then
+      mume.char.maxhp = mume.char.hp
+    end
+  end
+  if (gmcp.Char.Vitals.maxhp) then
+    mume.char.maxhp = tonumber(gmcp.Char.Vitals.maxhp)
+  end
+  healthBar:setValue((100/mume.char.maxhp)*mume.char.hp, 100, "&lt;center&gt;&lt;b&gt;"..mume.char.hp.."/"..mume.char.maxhp.."&lt;/b&gt;&lt;/center&gt;")
+  
+  -- Mana
+  if (gmcp.Char.Vitals.mana) then
+    mume.char.mana = tonumber(gmcp.Char.Vitals.mana)
+    if (mume.char.maxmana &lt; mume.char.mana) then
+      mume.char.maxmana = mume.char.mana
+    end
+  end
+  if (gmcp.Char.Vitals.maxmana) then
+    mume.char.maxmana = tonumber(gmcp.Char.Vitals.maxmana)
+  end  
+  if (gmcp.Char.Vitals.mp) then
+    mume.char.mp = tonumber(gmcp.Char.Vitals.mp)
+    if (mume.char.maxmp &lt; mume.char.mp) then
+      mume.char.maxmp = mume.char.mp
+    end
+  end
+  if (mume.char.maxmana == 0) then
+    manaBar:setValue(0, 0, "")
+  else
+    manaBar:setValue((100/mume.char.maxmana)*mume.char.mana, 100, "&lt;center&gt;&lt;b&gt;"..mume.char.mana.."/"..mume.char.maxmana.."&lt;/b&gt;&lt;/center&gt;")
+  end
+  
+  -- Moves
+  if (gmcp.Char.Vitals.maxmp) then
+    mume.char.maxmp = tonumber(gmcp.Char.Vitals.maxmp)
+  end
+  moveBar:setValue((100/mume.char.maxmp)*mume.char.mp, 100, "&lt;center&gt;&lt;b&gt;"..mume.char.mp.."/"..mume.char.maxmp.."&lt;/b&gt;&lt;/center&gt;")
+end
+
+function buildGUI()
+  -- Display Map
+  mapper = Geyser.Mapper:new({embedded= false, dockPosition="right"})
+  
+  -- Health, Mana, and Moves Gauges
+  setBorderBottom(22)
+  scoreContainer = scoreContainer or Geyser.Container:new({
+    name = "scoreContainer",
+    x = 0,
+    y = -22,
+    width = "100%",
+    height = 22,
+    })
+  
+  healthContainer = healthContainer or Geyser.Container:new({
+      name = "healthContainer",
+      x = 0,
+      y = 0,
+      width = "33%",
+      height = 22,
+    }, scoreContainer)
+  healthBar = healthBar or Geyser.Gauge:new({
+        name = "healthBar",
+        x = 0,
+        y = 0,
+        width = "100%",
+        height = "100%",
+    }, healthContainer)
+  healthBar.front:setStyleSheet([[background-color: QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #f04141, stop: 0.1 #ef2929, stop: 0.49 #cc0000, stop: 0.5 #a40000, stop: 1 #cc0000);
+      border-top: 1px black solid;
+      border-left: 1px black solid;
+      border-bottom: 1px black solid;
+      border-radius: 7;
+      padding: 3px;]])
+  healthBar.back:setStyleSheet([[background-color: QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #bd3333, stop: 0.1 #bd2020, stop: 0.49 #990000, stop: 0.5 #700000, stop: 1 #990000);
+      border-width: 1px;
+      border-color: black;
+      border-style: solid;
+      border-radius: 7;
+      padding: 3px;]])
+
+  manaContainer = manaContainer or Geyser.Container:new({
+      name = "manaContainer",
+      x = "33%",
+      y = 0,
+      width = "34%",
+      height = 22,
+    }, scoreContainer)
+  manaBar = manaBar or Geyser.Gauge:new({
+        name = "manaBar",
+        x = 0,
+        y = 0,
+        width = "100%",
+        height = "100%",
+    }, manaContainer)
+  manaBar.front:setStyleSheet([[background-color: QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #4141f0, stop: 0.1 #2929ef, stop: 0.49 #0000cc, stop: 0.5 #0000a4, stop: 1 #0000cc);
+      border-top: 1px black solid;
+      border-left: 1px black solid;
+      border-bottom: 1px black solid;
+      border-radius: 7;
+      padding: 3px;]])
+  manaBar.back:setStyleSheet([[background-color: QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #3333bd, stop: 0.1 #2020bd, stop: 0.49 #000099, stop: 0.5 #000070, stop: 1 #000099);
+      border-width: 1px;
+      border-color: black;
+      border-style: solid;
+      border-radius: 7;
+      padding: 3px;]])
+  
+  moveContainer = moveContainer or Geyser.Container:new({
+      name = "moveContainer",
+      x = "67%",
+      y = 0,
+      width = "33%",
+      height = 22,
+    }, scoreContainer)
+  moveBar = moveBar or Geyser.Gauge:new({
+        name = "moveBar",
+        x = 0,
+        y = 0,
+        width = "100%",
+        height = "100%",
+    }, moveContainer)
+  moveBar.front:setStyleSheet([[background-color: QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #98f041, stop: 0.1 #8cf029, stop: 0.49 #66cc00, stop: 0.5 #52a300, stop: 1 #66cc00);
+      border-top: 1px black solid;
+      border-left: 1px black solid;
+      border-bottom: 1px black solid;
+      border-radius: 7;
+      padding: 3px;
+  ]])
+  moveBar.back:setStyleSheet([[background-color: QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #78bd33, stop: 0.1 #6ebd20, stop: 0.49 #4c9900, stop: 0.5 #387000, stop: 1 #4c9900);
+      border-width: 1px;
+      border-color: black;
+      border-style: solid;
+      border-radius: 7;
+      padding: 3px;
+  ]])
+
+  healthBar:setFontSize(tonumber(scorebarFontSize))
+  manaBar:setFontSize(tonumber(scorebarFontSize))
+  moveBar:setFontSize(tonumber(scorebarFontSize))
+end
+
+function mume.eventHandler(event,...)
+    if event == "gmcp.Room.Info" then
+      roomInfo()
+    elseif event == "gmcp.Char.Vitals" then
+      charVitals()
+    elseif event == "gmcp.Char.Name" then
+      charName()
+    end
+end
+
+function onProtocolEnabled(_, protocol)
+  if protocol == "GMCP" then
+    sendGMCP("Core.Supports.Add [ \"Char 1\", \"Room 1\" ]")
+  end
+end
+
+function installComplete(_, package)
+  if package == "generic_mapper" then
+    -- Disable triggers that might have been re-enabled
+    disableTrigger("English Exits Trigger")
+  elseif package == "mume_gui" then
+    buildGUI()
+  end
+end
+
+-- Disable Generic Mapper exit triggers and instead rely on GMCP
+disableTrigger("English Exits Trigger")
+
+buildGUI()
+
+registerAnonymousEventHandler("gmcp.Char.Name", "mume.eventHandler")
+registerAnonymousEventHandler("gmcp.Char.Vitals", "mume.eventHandler")
+registerAnonymousEventHandler("gmcp.Room.Info", "mume.eventHandler")
+registerAnonymousEventHandler("sysProtocolEnabled", "onProtocolEnabled")
+registerAnonymousEventHandler("sysInstall", "installComplete")</script>
+			<eventHandlerList />
+		</Script>
+	</ScriptPackage>
+</MudletPackage>
