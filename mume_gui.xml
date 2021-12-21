@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE MudletPackage>
-<MudletPackage version="1.002">
+<MudletPackage version="1.001">
 	<ScriptPackage>
 		<Script isActive="yes" isFolder="no">
 			<name>MUME GMCP</name>
@@ -216,6 +216,9 @@ end
 
 -- Disable Generic Mapper exit triggers and instead rely on GMCP
 disableTrigger("English Exits Trigger")
+
+-- Provide the Generic Mapper a prompt pattern
+map.save.prompt_pattern[map.character] = '^(?:\\+ )?[\\*@\\!\\)o]?[\\[#\\.f\\(&lt;%~WU\\+:=O]?[~\'"]?[-=]?( ?[Cc]?[Rr]?[Ss]?W?)?(?: i[^ &gt;]+)?(?: NN)?(?: NS)?(?: XP:\\d+)?(?: TP:\\d+)?(?: \\d+\[\\d+:\\d+\\])?(?: HP:([^ &gt;]+))?(?: Mana:([^ &gt;]+))?(?: Move:([^ &gt;]+))?(?: Mount:([^ &gt;]+))?(?: ([^&gt;:]+):([^ &gt;]+))?(?: ([^&gt;:]+):([^ &gt;]+))?&gt;'
 
 buildGUI()
 
