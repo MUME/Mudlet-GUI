@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE MudletPackage>
-<MudletPackage version="1.001">
+<MudletPackage version="1.002">
 	<ScriptPackage>
 		<Script isActive="yes" isFolder="no">
 			<name>MUME GMCP</name>
@@ -13,6 +13,7 @@ mume.char.mana = mume.char.mana or 0
 mume.char.maxmana = mume.char.maxmana or 0
 mume.char.mp = mume.char.mp or 0
 mume.char.maxmp = mume.char.maxmp or 0
+mume.registeredEvents = mume.registeredEvents or {}
 
 -- Font size for the score bars on top of the player window
 local scorebarFontSize = "12"
@@ -193,27 +194,23 @@ function buildGUI()
 end
 
 function mume.eventHandler(event,...)
-    if event == "gmcp.Room.Info" then
-      roomInfo()
-    elseif event == "gmcp.Char.Vitals" then
-      charVitals()
-    elseif event == "gmcp.Char.Name" then
-      charName()
-    end
-end
-
-function onProtocolEnabled(_, protocol)
-  if protocol == "GMCP" then
+  if event == "gmcp.Room.Info" then
+    roomInfo()
+  elseif event == "gmcp.Char.Vitals" then
+    charVitals()
+  elseif event == "gmcp.Char.Name" then
+    charName()
+  elseif event == "sysProtocolEnabled" and arg[1] == "GMCP" then
     sendGMCP("Core.Supports.Add [ \"Char 1\", \"Room 1\" ]")
-  end
-end
-
-function installComplete(_, package)
-  if package == "generic_mapper" then
+  elseif event == "sysInstall" and arg[1] == "generic_mapper" then
     -- Disable triggers that might have been re-enabled
     disableTrigger("English Exits Trigger")
-  elseif package == "mume_gui" then
+  elseif event == "sysInstall" and arg[1] == "mume_gui" then
     buildGUI()
+  elseif event == "sysUninstallPackage" and arg[1] == "mume_gui" then
+    for _,id in ipairs(mume.registeredEvents) do
+      killAnonymousEventHandler(id)
+    end
   end
 end
 
@@ -222,11 +219,14 @@ disableTrigger("English Exits Trigger")
 
 buildGUI()
 
-registerAnonymousEventHandler("gmcp.Char.Name", "mume.eventHandler")
-registerAnonymousEventHandler("gmcp.Char.Vitals", "mume.eventHandler")
-registerAnonymousEventHandler("gmcp.Room.Info", "mume.eventHandler")
-registerAnonymousEventHandler("sysProtocolEnabled", "onProtocolEnabled")
-registerAnonymousEventHandler("sysInstall", "installComplete")</script>
+mume.registeredEvents = {
+registerAnonymousEventHandler("gmcp.Char.Name", "mume.eventHandler"),
+registerAnonymousEventHandler("gmcp.Char.Vitals", "mume.eventHandler"),
+registerAnonymousEventHandler("gmcp.Room.Info", "mume.eventHandler"),
+registerAnonymousEventHandler("sysProtocolEnabled", "mume.eventHandler"),
+registerAnonymousEventHandler("sysInstall", "mume.eventHandler"),
+registerAnonymousEventHandler("sysUninstallPackage", "mume.eventHandler")
+}</script>
 			<eventHandlerList />
 		</Script>
 	</ScriptPackage>
